@@ -1,8 +1,6 @@
 import vtk
 import numpy as np
-import os
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 # %% Load the point cloud
 point_cloud = np.loadtxt('adjusted_jcFS_ss_no-orientation.dip')
@@ -18,10 +16,39 @@ polydata.SetPoints(points)
 # %% Create a delaunay triangulation
 delaunay = vtk.vtkDelaunay3D()
 delaunay.SetInputData(polydata)
+delaunay.SetAlpha(0.0)
 delaunay.Update()
 
 # %% Get the surface
-surface = delaunay.GetOutput()
+output = delaunay.GetOutput()
+
+# %% plot the surface
+# Convert vtkUnstructuredGrid to vtkPolyData
+surface_filter = vtk.vtkDataSetSurfaceFilter()
+surface_filter.SetInputData(output)
+surface_filter.Update()
+
+# Get the surface as vtkPolyData
+surface = surface_filter.GetOutput()
+
+mapper = vtk.vtkPolyDataMapper()
+mapper.SetInputData(surface)
+
+actor = vtk.vtkActor()
+actor.SetMapper(mapper)
+
+renderer = vtk.vtkRenderer()
+renderer.AddActor(actor)
+
+render_window = vtk.vtkRenderWindow()
+render_window.AddRenderer(renderer)
+
+interactor = vtk.vtkRenderWindowInteractor()
+interactor.SetRenderWindow(render_window)
+
+interactor.Initialize()
+render_window.Render()
+interactor.Start()
 
 # %% Get the points on the surface
 points = surface.GetPoints()
@@ -80,3 +107,5 @@ renderer.AddActor(actor)
 interactor.Initialize()
 render_window.Render()
 interactor.Start()
+
+# %%
