@@ -1,9 +1,8 @@
 import vtk
 import numpy as np
-import matplotlib.pyplot as plt
 
 # %% Load the point cloud
-point_cloud = np.loadtxt('adjusted_jcFS_ss_no-orientation.dip')
+point_cloud = np.loadtxt('jcFS_ss_no-orientation.dip')
 
 # %% Fit a surface to the point cloud
 points = vtk.vtkPoints()
