@@ -6,7 +6,7 @@ point_cloud = np.loadtxt('jcFS_ss_no-orientation.dip')
 # %% load the surface
 # Create a vtkPLYReader object
 ply_reader = vtk.vtkPLYReader()
-ply_reader.SetFileName('surface.ply')
+ply_reader.SetFileName('delaunay3D_overCortex.ply')
 ply_reader.Update()
 
 # Get the output of the PLY reader
