@@ -1,8 +1,6 @@
 import vtk
 import numpy as np
 
-# %% Load the point cloud
-point_cloud = np.loadtxt('jcFS_ss_no-orientation.dip')
 # %% load the surface
 # Create a vtkPLYReader object
 ply_reader = vtk.vtkPLYReader()
@@ -87,5 +85,75 @@ interactor.Initialize()
 render_window.Render()
 interactor.Start()
 
-# # %% Fit a patch
-# PATCH_SIZE = 32
+# %% Fit a patch
+PATCH_SIZE = 32
+left_corner = point_picker.GetPickPosition()
+
+bounds = surface.GetBounds()
+
+# Calculate the patch bounds
+patch_bounds = [left_corner[0], left_corner[0] + PATCH_SIZE, left_corner[1], left_corner[1] + PATCH_SIZE, bounds[5]-5, bounds[5]]
+
+# Create a vtkCubeSource object
+cube_source = vtk.vtkCubeSource()
+cube_source.SetBounds(patch_bounds)
+cube_source.Update()
+
+# Get the output of the cube source
+patch = cube_source.GetOutput()
+
+# Project the patch onto the surface
+implicit_distance = vtk.vtkImplicitPolyDataDistance()
+implicit_distance.SetInput(surface)
+projected_patch = vtk.vtkPolyData()
+projected_patch.SetPoints(patch.GetPoints())
+projected_patch.Allocate(patch.GetNumberOfCells(), 1)
+for i in range(patch.GetNumberOfCells()):
+    cell = patch.GetCell(i)
+    projected_patch.InsertNextCell(cell.GetCellType(), cell.GetPointIds())
+
+for i in range(patch.GetNumberOfPoints()):
+    point = patch.GetPoint(i)
+    distance = implicit_distance.EvaluateFunction(point)
+    projected_point = [point[j] - distance * implicit_distance.FunctionGradient(point)[j] for j in range(3)]
+    projected_patch.GetPoints().SetPoint(i, projected_point)
+
+
+# %% Create a renderer
+renderer = vtk.vtkRenderer()
+renderer.SetBackground(1, 1, 1)  # Set the background color to white
+
+# Create a render window
+render_window = vtk.vtkRenderWindow()
+render_window.AddRenderer(renderer)
+
+# Create an interactor
+interactor = vtk.vtkRenderWindowInteractor()
+interactor.SetRenderWindow(render_window)
+
+# Set the interactor style to trackball camera
+interactor_style = vtk.vtkInteractorStyleTrackballCamera()
+interactor.SetInteractorStyle(interactor_style)
+
+# Add the surface to the renderer
+surface_mapper = vtk.vtkPolyDataMapper()
+surface_mapper.SetInputData(surface)
+surface_actor = vtk.vtkActor()
+surface_actor.SetMapper(surface_mapper)
+surface_actor.GetProperty().SetOpacity(0.7)
+renderer.AddActor(surface_actor)
+
+# Add the projected patch to the renderer
+projected_patch_mapper = vtk.vtkPolyDataMapper()
+projected_patch_mapper.SetInputData(projected_patch)
+projected_patch_actor = vtk.vtkActor()
+projected_patch_actor.SetMapper(projected_patch_mapper)
+projected_patch_actor.GetProperty().SetColor(0, 1, 0)  # Set the color to green
+renderer.AddActor(projected_patch_actor)
+
+# Render the scene
+render_window.Render()
+
+# Start the interactor
+interactor.Initialize()
+interactor.Start()
