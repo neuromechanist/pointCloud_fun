@@ -92,7 +92,7 @@ left_corner = point_picker.GetPickPosition()
 bounds = surface.GetBounds()
 
 # Calculate the patch bounds
-patch_bounds = [left_corner[0], left_corner[0] + PATCH_SIZE, left_corner[1], left_corner[1] + PATCH_SIZE, bounds[5]-5, bounds[5]]
+patch_bounds = [left_corner[0], left_corner[0] + PATCH_SIZE, left_corner[1], left_corner[1] + PATCH_SIZE, bounds[5], bounds[5]]
 
 # Create a vtkCubeSource object
 cube_source = vtk.vtkCubeSource()
