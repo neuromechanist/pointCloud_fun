@@ -1,6 +1,7 @@
 # %% init
 import vtk
 import numpy as np
+SAVE_FILES = False
 
 # %% Load the point cloud
 point_cloud = np.loadtxt('jcFS_ss_no-orientation.dip')
@@ -82,19 +83,26 @@ render_window.AddRenderer(renderer)
 interactor = vtk.vtkRenderWindowInteractor()
 interactor.SetRenderWindow(render_window)
 
-# %% Create thea renderer
+# %% Create the renderer
 interactor.Initialize()
 render_window.Render()
 interactor.Start()
 
-# %% export the renderer to a VRML file
-vrml_exporter = vtk.vtkVRMLExporter()
-vrml_exporter.SetFileName('delaunay3D_overCortex.wrl')
-vrml_exporter.SetRenderWindow(render_window)
-vrml_exporter.Write()
+if SAVE_FILES:
+    # %% Create a VTK OBJ exporter
+    obj_exporter = vtk.vtkOBJExporter()
+    obj_exporter.SetInput(render_window)
+    obj_exporter.SetFilePrefix("delaunay3D_overCortex")
+    obj_exporter.Write()
 
-# %% Write the surface to a file
-ply_writer = vtk.vtkPLYWriter()
-ply_writer.SetFileName('delaunay3D_overCortex.ply')
-ply_writer.SetInputData(surface)
-ply_writer.Write()
+    # %% export the renderer to a VRML file
+    vrml_exporter = vtk.vtkVRMLExporter()
+    vrml_exporter.SetFileName('delaunay3D_overCortex.wrl')
+    vrml_exporter.SetRenderWindow(render_window)
+    vrml_exporter.Write()
+
+    # %% Write the surface to a file
+    ply_writer = vtk.vtkPLYWriter()
+    ply_writer.SetFileName('delaunay3D_overCortex.ply')
+    ply_writer.SetInputData(surface)
+    ply_writer.Write()
