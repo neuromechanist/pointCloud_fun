@@ -87,6 +87,12 @@ interactor.Initialize()
 render_window.Render()
 interactor.Start()
 
+# %% export the renderer to a VRML file
+vrml_exporter = vtk.vtkVRMLExporter()
+vrml_exporter.SetFileName('delaunay3D_overCortex.wrl')
+vrml_exporter.SetRenderWindow(render_window)
+vrml_exporter.Write()
+
 # %% Write the surface to a file
 ply_writer = vtk.vtkPLYWriter()
 ply_writer.SetFileName('delaunay3D_overCortex.ply')
