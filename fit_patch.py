@@ -119,14 +119,14 @@ for i in range(patch.GetNumberOfPoints()):
     projected_patch.GetPoints().SetPoint(i, projected_point)
 
 
-# Perform surface reconstruction using Poisson algorithm
-poisson = vtk.vtkPoissonReconstruction()
-poisson.SetDepth(10)  # Set the depth parameter for the reconstruction
-poisson.SetInputData(projected_patch)
-poisson.Update()
+# # Perform surface reconstruction using Poisson algorithm
+# poisson = vtk.vtkPoissonReconstruction()  # vtk.vtkPoissonReconstruction is not compiled yet
+# poisson.SetDepth(10)  # Set the depth parameter for the reconstruction
+# poisson.SetInputData(projected_patch)
+# poisson.Update()
 
-# Get the output of the Poisson reconstruction
-smooth_surface = poisson.GetOutput()
+# # Get the output of the Poisson reconstruction
+# smooth_surface = poisson.GetOutput()
 
 # %% Create a renderer
 renderer = vtk.vtkRenderer()
@@ -152,21 +152,21 @@ surface_actor.SetMapper(surface_mapper)
 surface_actor.GetProperty().SetOpacity(0.7)
 renderer.AddActor(surface_actor)
 
-# # Add the projected patch to the renderer
-# projected_patch_mapper = vtk.vtkPolyDataMapper()
-# projected_patch_mapper.SetInputData(projected_patch)
-# projected_patch_actor = vtk.vtkActor()
-# projected_patch_actor.SetMapper(projected_patch_mapper)
-# projected_patch_actor.GetProperty().SetColor(0, 1, 0)  # Set the color to green
-# renderer.AddActor(projected_patch_actor)
+# Add the projected patch to the renderer
+projected_patch_mapper = vtk.vtkPolyDataMapper()
+projected_patch_mapper.SetInputData(projected_patch)
+projected_patch_actor = vtk.vtkActor()
+projected_patch_actor.SetMapper(projected_patch_mapper)
+projected_patch_actor.GetProperty().SetColor(0, 1, 0)  # Set the color to green
+renderer.AddActor(projected_patch_actor)
 
-# Add the smooth surface to the renderer
-smooth_surface_mapper = vtk.vtkPolyDataMapper()
-smooth_surface_mapper.SetInputData(smooth_surface)
-smooth_surface_actor = vtk.vtkActor()
-smooth_surface_actor.SetMapper(smooth_surface_mapper)
-smooth_surface_actor.GetProperty().SetColor(0, 1, 0)  # Set the color to green
-renderer.AddActor(smooth_surface_actor)
+# # Add the smooth surface to the renderer
+# smooth_surface_mapper = vtk.vtkPolyDataMapper()
+# smooth_surface_mapper.SetInputData(smooth_surface)
+# smooth_surface_actor = vtk.vtkActor()
+# smooth_surface_actor.SetMapper(smooth_surface_mapper)
+# smooth_surface_actor.GetProperty().SetColor(0, 1, 0)  # Set the color to green
+# renderer.AddActor(smooth_surface_actor)
 
 # Render the scene
 render_window.Render()
@@ -174,3 +174,10 @@ render_window.Render()
 # Start the interactor
 interactor.Initialize()
 interactor.Start()
+
+# %% Save the projected patch
+# Create a vtkPLYWriter object
+ply_writer = vtk.vtkPLYWriter()
+ply_writer.SetFileName('projected_patch.ply')
+ply_writer.SetInputData(projected_patch)
+ply_writer.Write()
