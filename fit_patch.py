@@ -1,5 +1,4 @@
 import vtk
-import numpy as np
 
 # %% load the surface
 # Create a vtkPLYReader object
