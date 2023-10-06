@@ -10,6 +10,7 @@
 import vtk
 import numpy as np
 
+PLOT_PATCH = False
 # load the patch
 # Create a vtkPLYReader object
 ply_reader = vtk.vtkPLYReader()
@@ -32,52 +33,53 @@ polydata.SetPoints(points)
 
 # %% plot the patch and the point cloud
 # patch mapper and actor
-patch_mapper = vtk.vtkPolyDataMapper()
-patch_mapper.SetInputData(patch)
-patch_actor = vtk.vtkActor()
-patch_actor.SetMapper(patch_mapper)
+if PLOT_PATCH:
+    patch_mapper = vtk.vtkPolyDataMapper()
+    patch_mapper.SetInputData(patch)
+    patch_actor = vtk.vtkActor()
+    patch_actor.SetMapper(patch_mapper)
 
-# point cloud mapper and actor
-# Create a VTK glyph to visualize the points
-glyph = vtk.vtkGlyph3D()
-glyph.SetInputData(polydata)
-glyph.Update()
+    # point cloud mapper and actor
+    # Create a VTK glyph to visualize the points
+    glyph = vtk.vtkGlyph3D()
+    glyph.SetInputData(polydata)
+    glyph.Update()
 
-# set the shape of the glyph
-sphere_source = vtk.vtkSphereSource()
-sphere_source.SetRadius(0.25)  # Set the radius of the sphere
-glyph.SetSourceConnection(sphere_source.GetOutputPort())
-glyph.Update()
+    # set the shape of the glyph
+    sphere_source = vtk.vtkSphereSource()
+    sphere_source.SetRadius(0.25)  # Set the radius of the sphere
+    glyph.SetSourceConnection(sphere_source.GetOutputPort())
+    glyph.Update()
 
-# Increase the glyph size
-# glyph.SetScaleFactor(2.0)  # Adjust the scale factor as desired
+    # Increase the glyph size
+    # glyph.SetScaleFactor(2.0)  # Adjust the scale factor as desired
 
-# Create a VTK mapper and actor
-pc_mapper = vtk.vtkPolyDataMapper()
-pc_mapper.SetInputConnection(glyph.GetOutputPort())
+    # Create a VTK mapper and actor
+    pc_mapper = vtk.vtkPolyDataMapper()
+    pc_mapper.SetInputConnection(glyph.GetOutputPort())
 
-pc_actor = vtk.vtkActor()
-pc_actor.SetMapper(pc_mapper)
-pc_actor.GetProperty().SetColor(0, 0, 1)  # Set point color to blue
+    pc_actor = vtk.vtkActor()
+    pc_actor.SetMapper(pc_mapper)
+    pc_actor.GetProperty().SetColor(0, 0, 1)  # Set point color to blue
 
-# create a renderer
-renderer = vtk.vtkRenderer()
-renderer.SetBackground(0.5, 0.5, 0.5)  # Set the background color to white
-renderer.AddActor(patch_actor)
-renderer.AddActor(pc_actor)
+    # create a renderer
+    renderer = vtk.vtkRenderer()
+    renderer.SetBackground(0.5, 0.5, 0.5)  # Set the background color to white
+    renderer.AddActor(patch_actor)
+    renderer.AddActor(pc_actor)
 
-# create a render window
-render_window = vtk.vtkRenderWindow()
-render_window.AddRenderer(renderer)
+    # create a render window
+    render_window = vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
 
-# create an interactor
-interactor = vtk.vtkRenderWindowInteractor()
-interactor.SetRenderWindow(render_window)
+    # create an interactor
+    interactor = vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(render_window)
 
-# initialize the interactor
-interactor.Initialize()
-render_window.Render()
-interactor.Start()
+    # initialize the interactor
+    interactor.Initialize()
+    render_window.Render()
+    interactor.Start()
 
 # %% divide the patch to smaller patches
 # get the bounds of the patch
