@@ -101,20 +101,14 @@ for i in range(n_patches):
 # Build a KD-Tree from the point cloud
 tree = cKDTree(point_cloud)
 
-# List to store closest points for each patch
-closest_points_to_patch = []
+# Initialize arrays to store the results
+num_patches = len(patch_bounds)
+top_closest_points = np.zeros((num_patches, 9))
+closest_distances = np.zeros((num_patches, 3))
+closest_point_indices = np.zeros((num_patches, 3))
 
-previous_closest_point_index = None
-local_search_radius = PATCH_SIZE * 1.5  # Adjust as needed
-
-
-# %% define a function to compute the distance between two points
-def compute_distance(point1, point2):
-    return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 + (point1[2] - point2[2])**2)
-
-
-# %% main loop to find the closest points
-for patch_bound in patch_bounds:
+# main loop to find the closest points
+for idx, patch_bound in enumerate(patch_bounds):
     # Compute the center of the bounding box
     center = [
         (patch_bound[0] + patch_bound[1]) / 2,
@@ -122,20 +116,13 @@ for patch_bound in patch_bounds:
         (patch_bound[4] + patch_bound[5]) / 2
     ]
 
-    if previous_closest_point_index is None:
-        # For the first patch, search the entire point cloud
-        _, index = tree.query(center)
-    else:
-        # For subsequent patches, search within a local neighborhood
-        indices = tree.query_ball_point(point_cloud[previous_closest_point_index], local_search_radius)
-        
-        if not indices:
-            # If no points are found in the local neighborhood, search the entire point cloud
-            _, index = tree.query(center)
-        else:
-            distances = [compute_distance(center, point_cloud[i]) for i in indices]
-            index = indices[np.argmin(distances)]
+    # Query the KD-Tree to get the three closest points and their distances
+    distances, indices = tree.query(center, k=3)
 
-    closest_point = point_cloud[index]
-    closest_points_to_patch.append(closest_point)
-    previous_closest_point_index = index
+    # Store the results in the desired format
+    closest_points = np.array([point_cloud[i] for i in indices]).flatten()
+    top_closest_points[idx, :] = closest_points
+    closest_distances[idx, :] = distances
+    closest_point_indices[idx, :] = indices
+
+# %%
