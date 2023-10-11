@@ -9,6 +9,7 @@
 # load the patch and the point cloud
 import vtk
 import numpy as np
+from scipy.spatial import cKDTree
 
 PLOT_PATCH = False
 # load the patch
@@ -97,16 +98,23 @@ for i in range(n_patches):
                              bounds[4], bounds[4]])
 
 # %% find the closest points in the point cloud to the smaller patches
-# create a vtkCellLocator object
-locator = vtk.vtkCellLocator()
-locator.SetDataSet(polydata)
-locator.BuildLocator()
+# Build a KD-Tree from the point cloud
+tree = cKDTree(point_cloud)
 
-# create a vtkPoints object to store the closest points
-closest_points = vtk.vtkPoints()
+# List to store closest points for each patch
+closest_points_to_patch = []
 
-# find the closest points
-for i, patch_bound in enumerate(patch_bounds):
+previous_closest_point_index = None
+local_search_radius = PATCH_SIZE * 1.5  # Adjust as needed
+
+
+# %% define a function to compute the distance between two points
+def compute_distance(point1, point2):
+    return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 + (point1[2] - point2[2])**2)
+
+
+# %% main loop to find the closest points
+for patch_bound in patch_bounds:
     # Compute the center of the bounding box
     center = [
         (patch_bound[0] + patch_bound[1]) / 2,
@@ -114,44 +122,20 @@ for i, patch_bound in enumerate(patch_bounds):
         (patch_bound[4] + patch_bound[5]) / 2
     ]
 
-    # find the closest point
-    closest_point = [0, 0, 0]
-    closest_point_id = vtk.mutable(0)
-    sub_id = vtk.mutable(0)
-    dist2 = vtk.mutable(0)
-    locator.FindClosestPoint(center, closest_point, vtk.vtkGenericCell(), closest_point_id, sub_id, dist2)
+    if previous_closest_point_index is None:
+        # For the first patch, search the entire point cloud
+        _, index = tree.query(center)
+    else:
+        # For subsequent patches, search within a local neighborhood
+        indices = tree.query_ball_point(point_cloud[previous_closest_point_index], local_search_radius)
+        
+        if not indices:
+            # If no points are found in the local neighborhood, search the entire point cloud
+            _, index = tree.query(center)
+        else:
+            distances = [compute_distance(center, point_cloud[i]) for i in indices]
+            index = indices[np.argmin(distances)]
 
-    print(f"started with cell number {i}")
-    # add the closest point to the vtkPoints object
-    closest_points.InsertNextPoint(closest_point)
-    print(f"done with cell number {i}")
-
-# find the closest points
-# for i, patch_bound in enumerate(patch_bounds):
-#     # create a vtkCubeSource object
-#     cube_source = vtk.vtkCubeSource()
-#     cube_source.SetBounds(patch_bound)
-#     cube_source.Update()
-
-#     # get the output of the cube source
-#     patch = cube_source.GetOutput()
-
-#     # get the center of the patch
-#     center = patch.GetCenter()
-
-#     # convert patch to vtkGenericCell
-#     patch_cell = vtk.vtkGenericCell()
-#     patch_cell.SetPoints(patch.GetPoints())
-
-#     # find the closest point
-#     closest_point = [0, 0, 0]
-#     closest_point_id = vtk.mutable(0)
-#     sub_id = vtk.mutable(0)
-#     dist2 = vtk.mutable(0)
-#     locator.FindClosestPoint(center, closest_point, patch_cell, closest_point_id, sub_id, dist2)
-#     print(f"started with cell number {i}")
-#     # add the closest point to the vtkPoints object
-#     closest_points.InsertNextPoint(closest_point)
-#     print(f"done with cell number {i}")
-
-# %%
+    closest_point = point_cloud[index]
+    closest_points_to_patch.append(closest_point)
+    previous_closest_point_index = index
