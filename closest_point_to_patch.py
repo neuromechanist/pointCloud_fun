@@ -107,28 +107,51 @@ closest_points = vtk.vtkPoints()
 
 # find the closest points
 for i, patch_bound in enumerate(patch_bounds):
-    # create a vtkCubeSource object
-    cube_source = vtk.vtkCubeSource()
-    cube_source.SetBounds(patch_bound)
-    cube_source.Update()
-
-    # get the output of the cube source
-    patch = cube_source.GetOutput()
-
-    # get the center of the patch
-    center = patch.GetCenter()
-
-    # convert patch to vtkGenericCell
-    patch_cell = vtk.vtkGenericCell()
-    patch_cell.SetPoints(patch.GetPoints())
+    # Compute the center of the bounding box
+    center = [
+        (patch_bound[0] + patch_bound[1]) / 2,
+        (patch_bound[2] + patch_bound[3]) / 2,
+        (patch_bound[4] + patch_bound[5]) / 2
+    ]
 
     # find the closest point
     closest_point = [0, 0, 0]
     closest_point_id = vtk.mutable(0)
     sub_id = vtk.mutable(0)
     dist2 = vtk.mutable(0)
-    locator.FindClosestPoint(center, closest_point, patch_cell, closest_point_id, sub_id, dist2)
+    locator.FindClosestPoint(center, closest_point, vtk.vtkGenericCell(), closest_point_id, sub_id, dist2)
+
     print(f"started with cell number {i}")
     # add the closest point to the vtkPoints object
     closest_points.InsertNextPoint(closest_point)
     print(f"done with cell number {i}")
+
+# find the closest points
+# for i, patch_bound in enumerate(patch_bounds):
+#     # create a vtkCubeSource object
+#     cube_source = vtk.vtkCubeSource()
+#     cube_source.SetBounds(patch_bound)
+#     cube_source.Update()
+
+#     # get the output of the cube source
+#     patch = cube_source.GetOutput()
+
+#     # get the center of the patch
+#     center = patch.GetCenter()
+
+#     # convert patch to vtkGenericCell
+#     patch_cell = vtk.vtkGenericCell()
+#     patch_cell.SetPoints(patch.GetPoints())
+
+#     # find the closest point
+#     closest_point = [0, 0, 0]
+#     closest_point_id = vtk.mutable(0)
+#     sub_id = vtk.mutable(0)
+#     dist2 = vtk.mutable(0)
+#     locator.FindClosestPoint(center, closest_point, patch_cell, closest_point_id, sub_id, dist2)
+#     print(f"started with cell number {i}")
+#     # add the closest point to the vtkPoints object
+#     closest_points.InsertNextPoint(closest_point)
+#     print(f"done with cell number {i}")
+
+# %%
