@@ -124,5 +124,3 @@ for idx, patch_bound in enumerate(patch_bounds):
     top_closest_points[idx, :] = closest_points
     closest_distances[idx, :] = distances
     closest_point_indices[idx, :] = indices
-
-# %%
