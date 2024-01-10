@@ -5,13 +5,13 @@
 # 3. For each smaller patch, find the closest point in the point cloud.
 # 4. Determine if the closest point is at either side of the patch.
 # 5. Find the index of the closest points in the point cloud and correlate that to the index of the small patch.
-# %% initilize
+# %% initialize
 # load the patch and the point cloud
 import vtk
 import numpy as np
 from scipy.spatial import cKDTree
 
-PLOT_PATCH = False
+PLOT_PATCH = True
 # load the patch
 # Create a vtkPLYReader object
 ply_reader = vtk.vtkPLYReader()
@@ -85,17 +85,95 @@ if PLOT_PATCH:
 # %% divide the patch to smaller patches
 # get the bounds of the patch
 bounds = patch.GetBounds()
+bounds_range = [bounds[1] - bounds[0], bounds[3] - bounds[2], bounds[5] - bounds[4]]
 
 # divide the patch to 32x32 smaller patches
-PATCH_SIZE = 32
-n_patches = 32
+n_patches = 32  # number of patches in each direction
+PATCH_SIZE = (np.array(bounds_range) / n_patches).tolist()
 patch_bounds = []
+patch_centers = []
 
 for i in range(n_patches):
     for j in range(n_patches):
-        patch_bounds.append([bounds[0] + i * PATCH_SIZE, bounds[0] + (i + 1) * PATCH_SIZE,
-                             bounds[2] + j * PATCH_SIZE, bounds[2] + (j + 1) * PATCH_SIZE,
-                             bounds[4], bounds[4]])
+        patch_bounds.append([bounds[0] + i * PATCH_SIZE[0], bounds[0] + (i + 1) * PATCH_SIZE[0],
+                             bounds[2] + j * PATCH_SIZE[1], bounds[2] + (j + 1) * PATCH_SIZE[1],
+                             bounds[4], bounds[5]])
+        patch_centers.append([(bounds[0] + i * PATCH_SIZE[0] + bounds[0] + (i + 1) * PATCH_SIZE[0]) / 2,
+                              (bounds[2] + j * PATCH_SIZE[1] + bounds[2] + (j + 1) * PATCH_SIZE[1]) / 2,
+                              bounds[4]])
+        
+# %% plot the smaller patch centers on the point cloud
+# Create a VTK glyph to visualize the points
+glyph = vtk.vtkGlyph3D()
+glyph.SetInputData(polydata)
+glyph.Update()
+
+# set the shape of the glyph
+sphere_source = vtk.vtkSphereSource()
+sphere_source.SetRadius(0.25)  # Set the radius of the sphere
+glyph.SetSourceConnection(sphere_source.GetOutputPort())
+glyph.Update()
+
+# Increase the glyph size
+# glyph.SetScaleFactor(2.0)  # Adjust the scale factor as desired
+
+# Create a VTK mapper and actor
+pc_mapper = vtk.vtkPolyDataMapper()
+pc_mapper.SetInputConnection(glyph.GetOutputPort())
+
+pc_actor = vtk.vtkActor()
+pc_actor.SetMapper(pc_mapper)
+pc_actor.GetProperty().SetColor(0, 0, 1)  # Set point color to blue
+
+# Add the patch centers to the point cloud
+patch_centers_points = vtk.vtkPoints()
+for point in patch_centers:
+    patch_centers_points.InsertNextPoint(point)
+
+patch_centers_polydata = vtk.vtkPolyData()
+patch_centers_polydata.SetPoints(patch_centers_points)
+
+# Create a VTK glyph to visualize the points
+glyph = vtk.vtkGlyph3D()
+glyph.SetInputData(patch_centers_polydata)
+glyph.Update()
+
+# set the shape of the glyph
+sphere_source = vtk.vtkSphereSource()
+sphere_source.SetRadius(0.25)  # Set the radius of the sphere
+glyph.SetSourceConnection(sphere_source.GetOutputPort())
+glyph.Update()
+
+# Increase the glyph size
+# glyph.SetScaleFactor(2.0)  # Adjust the scale factor as desired
+
+# Create a VTK mapper and actor
+centerpoint_mapper = vtk.vtkPolyDataMapper()
+centerpoint_mapper.SetInputConnection(glyph.GetOutputPort())
+
+centerpoint_actor = vtk.vtkActor()
+centerpoint_actor.SetMapper(centerpoint_mapper)
+centerpoint_actor.GetProperty().SetColor(1, 0, 0)  # Set point color to red
+
+
+# create a renderer
+renderer = vtk.vtkRenderer()
+renderer.SetBackground(0.5, 0.5, 0.5)  # Set the background color to white
+renderer.AddActor(pc_actor)
+renderer.AddActor(centerpoint_actor)
+
+# create a render window
+render_window = vtk.vtkRenderWindow()
+render_window.AddRenderer(renderer)
+
+# create an interactor
+interactor = vtk.vtkRenderWindowInteractor()
+interactor.SetRenderWindow(render_window)
+
+# initialize the interactor
+interactor.Initialize()
+render_window.Render()
+interactor.Start()
 
 # %% find the closest points in the point cloud to the smaller patches
 # Build a KD-Tree from the point cloud
@@ -103,12 +181,14 @@ tree = cKDTree(point_cloud)
 
 # List to store closest points for each patch
 closest_points_to_patch = []
+distance_of_closest_points = []
+center_points = []
 
 previous_closest_point_index = None
 local_search_radius = PATCH_SIZE * 1.5  # Adjust as needed
 
 
-# %% define a function to compute the distance between two points
+# define a function to compute the distance between two points
 def compute_distance(point1, point2):
     return np.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2 + (point1[2] - point2[2])**2)
 
@@ -121,21 +201,23 @@ for patch_bound in patch_bounds:
         (patch_bound[2] + patch_bound[3]) / 2,
         (patch_bound[4] + patch_bound[5]) / 2
     ]
+    center_points.append(center)
+    # if previous_closest_point_index is None:
+    # For the first patch, search the entire point cloud
+    distance, index = tree.query(center, p=2)
+    # else:
+    #     # For subsequent patches, search within a local neighborhood
+    #     indices = tree.query_ball_point(point_cloud[previous_closest_point_index], local_search_radius)
 
-    if previous_closest_point_index is None:
-        # For the first patch, search the entire point cloud
-        _, index = tree.query(center)
-    else:
-        # For subsequent patches, search within a local neighborhood
-        indices = tree.query_ball_point(point_cloud[previous_closest_point_index], local_search_radius)
-        
-        if not indices:
-            # If no points are found in the local neighborhood, search the entire point cloud
-            _, index = tree.query(center)
-        else:
-            distances = [compute_distance(center, point_cloud[i]) for i in indices]
-            index = indices[np.argmin(distances)]
+    #     if not indices:
+    #         # If no points are found in the local neighborhood, search the entire point cloud
+    #         distance, index = tree.query(center)
+    #     else:
+    #         distances = [compute_distance(center, point_cloud[i]) for i in indices]
+    #         index = indices[np.argmin(distances)]
+    #         distance = np.min(distances)
 
     closest_point = point_cloud[index]
     closest_points_to_patch.append(closest_point)
-    previous_closest_point_index = index
+    distance_of_closest_points.append(distance)
+    # previous_closest_point_index = index
