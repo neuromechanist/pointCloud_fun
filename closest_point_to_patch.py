@@ -180,12 +180,15 @@ if PLOT_PATCH:
 # Build a KD-Tree from the point cloud
 tree = cKDTree(point_cloud)
 
-closest_points_to_patch = []
-distance_of_closest_points = []
-for c in patch_centers:
-    # find the closest point to the center of the patch
-    distance, index = tree.query(c)
+num_patches = len(patch_centers)
+NUMBER_OF_CLOSEST_POINTS = 3
+closest_points_to_patch = np.zeros((num_patches, NUMBER_OF_CLOSEST_POINTS, 3))
+distance_of_closest_points = np.zeros((num_patches, NUMBER_OF_CLOSEST_POINTS))
 
-    closest_point = point_cloud[index]
-    closest_points_to_patch.append(closest_point)
-    distance_of_closest_points.append(distance)
+for i, c in enumerate(patch_centers):
+    # find the closest point to the center of the patch
+    distance, index = tree.query(c, NUMBER_OF_CLOSEST_POINTS)
+
+    # get the closest points
+    closest_points_to_patch[i, :, :] = point_cloud[index, :]
+    distance_of_closest_points[i, :] = distance
