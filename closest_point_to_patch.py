@@ -216,3 +216,24 @@ for i in range(num_patches):
         unique_closest_point_to_patch[i, :] = closest_points_to_patch[i, np.where(np.logical_not(used_flag))[0][0], :]
         unique_distance_of_closest_point[i] = distance_of_closest_points[i, np.where(np.logical_not(used_flag))[0][0]]
         used_points_index[i] = unique_closest_point_index[i]
+
+# %% for the (non-unique) closest points above, find the patches that they belong to.
+# It turns out that many of the closest points are used for multiple patches.
+# Therefore, the `unique_closest_point_index` is often empty for many patches.
+# So, we need to solve the problem in an inverse way. For each point in the point cloud, 
+# find the patches that they belong to. Also, include the distance of the point to the patches.
+# We can use `closest_points_index` and `distance_of_closest_points` for this purpose.
+# The algorithm is as follows:
+        # 1. Find the points that are closest to the patches from the `closest_points_index`.
+        # 2. Create a dictionary with the point index as the key and the patch index and the distance as the value.
+        # 3. For each point, find the patches that they belong to and the distance to the patches.
+        # * It is possible that a patch is close to multiple points. The patch can be present for multiple points.
+
+# create a dictionary with the point index as the key and the patch index and the distance as the value
+point_to_patch = {}
+for i, c in enumerate(patch_centers):
+    for j in range(NUMBER_OF_CLOSEST_POINTS):
+        if closest_points_index[i, j] in point_to_patch:
+            point_to_patch[closest_points_index[i, j]].append((i, distance_of_closest_points[i, j]))
+        else:
+            point_to_patch[closest_points_index[i, j]] = [(i, distance_of_closest_points[i, j])]
