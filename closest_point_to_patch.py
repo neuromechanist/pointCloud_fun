@@ -199,6 +199,7 @@ for i, c in enumerate(patch_centers):
 # The weight is calculated as the inverse of the squared distance.
 # The weight is normalized to sum to 1.
 # The weight is used to calculate the projected activity of the patch to the point cloud.
+# TODO: #2 The weight should be calculated based on both the distance and the point normal.
 
 # calculate the weight of the closest points
 weight_of_closest_points = 1 / distance_of_closest_points**2
