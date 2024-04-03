@@ -194,6 +194,16 @@ for i, c in enumerate(patch_centers):
     closest_points_to_patch[i, :, :] = point_cloud[index, :]
     distance_of_closest_points[i, :] = distance
 
+# %% Give weight to the closest points based on the squared distance
+# The closest points are weighted based on the squared distance to the patch center.
+# The weight is calculated as the inverse of the squared distance.
+# The weight is normalized to sum to 1.
+# The weight is used to calculate the projected activity of the patch to the point cloud.
+
+# calculate the weight of the closest points
+weight_of_closest_points = 1 / distance_of_closest_points**2
+weight_of_closest_points = weight_of_closest_points / np.sum(weight_of_closest_points, axis=1)[:, np.newaxis]
+
 # %% choose unique points for each patch
 # Each smaller path should only correspond to one point in the point cloud.
 # For each patch, if use the next closest point if the closest point is already used for the previous patches.
@@ -231,9 +241,19 @@ for i in range(num_patches):
 
 # create a dictionary with the point index as the key and the patch index and the distance as the value
 point_to_patch = {}
+point_to_patch_weight = {}
 for i, c in enumerate(patch_centers):
     for j in range(NUMBER_OF_CLOSEST_POINTS):
         if closest_points_index[i, j] in point_to_patch:
             point_to_patch[closest_points_index[i, j]].append((i, distance_of_closest_points[i, j]))
+            point_to_patch_weight[closest_points_index[i, j]].append((i, weight_of_closest_points[i, j]))
         else:
             point_to_patch[closest_points_index[i, j]] = [(i, distance_of_closest_points[i, j])]
+            point_to_patch_weight[closest_points_index[i, j]] = [(i, weight_of_closest_points[i, j])]
+
+# %% save the point_to_patch and point_to_patch_weight
+import pickle
+with open('point_to_patch.pkl', 'wb') as f:
+    pickle.dump(point_to_patch, f)
+with open('point_to_patch_weight.pkl', 'wb') as f:
+    pickle.dump(point_to_patch_weight, f)
