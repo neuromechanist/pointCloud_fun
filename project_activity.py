@@ -6,11 +6,9 @@
 # %% initialize
 import os
 import numpy as np
-import pandas as pd
 import pickle
 import matplotlib.pyplot as plt
 import mne
-
 
 # %% load data
 # load the point to patch weight adn patch center coordinates
@@ -93,13 +91,17 @@ patch_activation = np.full((len(patch_center_coordinates), ECoG_data.shape[1]), 
 for key in closest_patch:
     patch_activation[closest_patch[key]] = ECoG_data[ECoG.ch_names.index(key)]
 
+
 # Define a function to interpolate the patch activation values using griddata from the known patches
 def interpolate(i):
     valid_mask = ~np.isnan(patch_activation[:, i])
     return griddata(patch_center_coordinates[valid_mask], patch_activation[valid_mask, i], (X, Y), method='cubic')
 
+
 # Use multiprocessing to parallelize the interpolation
-with Pool(4) as p:
+with Pool(12) as p:  # 12 cores, change as needed
     patch_activation_interpolated = np.array(p.map(interpolate, range(ECoG_data.shape[1])))
 
-patch_activation_interpolated = np.transpose(patch_activation_interpolated, (1, 2, 0))  # reshape to (32, 32, ECoG_data.shape[1])
+patch_activation_interpolated = np.transpose(
+    patch_activation_interpolated, (1, 2, 0))  # reshape to (32, 32, ECoG_data.shape[1])
+
