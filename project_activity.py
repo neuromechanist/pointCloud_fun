@@ -80,6 +80,7 @@ else:
 # This is done to ensure that the LeadField matrix is smooth.
 
 from scipy.interpolate import griddata
+from multiprocessing import Pool
 
 # create the patch grid for interpolation
 x = np.linspace(np.min(patch_center_coordinates[:, 0]), np.max(patch_center_coordinates[:, 0]), 32)
@@ -92,8 +93,13 @@ patch_activation = np.full((len(patch_center_coordinates), ECoG_data.shape[1]), 
 for key in closest_patch:
     patch_activation[closest_patch[key]] = ECoG_data[ECoG.ch_names.index(key)]
 
-# interpolate the patch activation values using griddata from the known patches
-patch_activation_interpolated = np.zeros((32, 32, ECoG_data.shape[1]))
-for i in range(ECoG_data.shape[1]):
+# Define a function to interpolate the patch activation values using griddata from the known patches
+def interpolate(i):
     valid_mask = ~np.isnan(patch_activation[:, i])
-    patch_activation_interpolated[:, :, i] = griddata(patch_center_coordinates[valid_mask], patch_activation[valid_mask, i], (X, Y), method='cubic')
+    return griddata(patch_center_coordinates[valid_mask], patch_activation[valid_mask, i], (X, Y), method='cubic')
+
+# Use multiprocessing to parallelize the interpolation
+with Pool(4) as p:
+    patch_activation_interpolated = np.array(p.map(interpolate, range(ECoG_data.shape[1])))
+
+patch_activation_interpolated = np.transpose(patch_activation_interpolated, (1, 2, 0))  # reshape to (32, 32, ECoG_data.shape[1])
