@@ -14,14 +14,13 @@ import mne
 # load the point to patch weight adn patch center coordinates
 with open('point_to_patch_weight.pkl', 'rb') as f:
     point_to_patch_weight = pickle.load(f)
-
 with open('patch_centers.pkl', 'rb') as f:
     patch_center_coordinates = pickle.load(f)
-# Teh patch centers are coordinates in 3D space, they should be in the same space as the electrode positions,
+
+# Patch centers are coordinates in 3D space, they should be in the same space as the electrode positions,
 # which is in a 2D plane. Find the least variable dimension and remove it.
 patch_center_coordinates = np.delete(
     patch_center_coordinates, np.std(patch_center_coordinates, axis=0).argmin(), axis=1)
-
 
 # load the patch activation values
 ECoG = mne.io.read_raw_eeglab('CS_FullMotor500Hz_475.set')
@@ -72,6 +71,7 @@ if len(set(closest_patch.values())) != len(closest_patch):
 else:
     print('All electrodes are assigned to a unique patch')
 
+# %% The following code currently gets into an infinite loop. The code is commented out for now.
 # %% Accommodate for the patches with no assigned electrode
 # Using patches with assigned electrodes and spline gird interpolation, estimate the patch activation values.
 # Then assign the estimated activation values to the patches with no assigned electrodes.
@@ -91,17 +91,48 @@ patch_activation = np.full((len(patch_center_coordinates), ECoG_data.shape[1]), 
 for key in closest_patch:
     patch_activation[closest_patch[key]] = ECoG_data[ECoG.ch_names.index(key)]
 
+# check how many patches have nan values
+num_nan_patches = sum(np.sum(np.isnan(patch_activation), axis=1) == 0)
+print(f'{num_nan_patches} patches have non nan values')
 
-# Define a function to interpolate the patch activation values using griddata from the known patches
-def interpolate(i):
-    valid_mask = ~np.isnan(patch_activation[:, i])
-    return griddata(patch_center_coordinates[valid_mask], patch_activation[valid_mask, i], (X, Y), method='cubic')
+# # Define a function to interpolate the patch activation values using griddata from the known patches
+# def interpolate(i):
+#     valid_mask = ~np.isnan(patch_activation[:, i])
+#     return griddata(patch_center_coordinates[valid_mask], patch_activation[valid_mask, i], (X, Y), method='cubic')
 
 
-# Use multiprocessing to parallelize the interpolation
-with Pool(12) as p:  # 12 cores, change as needed
-    patch_activation_interpolated = np.array(p.map(interpolate, range(ECoG_data.shape[1])))
+# # Use multiprocessing to parallelize the interpolation
+# with Pool(12) as p:  # 12 cores, change as needed
+#     patch_activation_interpolated = np.array(p.map(interpolate, range(ECoG_data.shape[1])))
 
-patch_activation_interpolated = np.transpose(
-    patch_activation_interpolated, (1, 2, 0))  # reshape to (32, 32, ECoG_data.shape[1])
+# patch_activation_interpolated = np.transpose(
+#     patch_activation_interpolated, (1, 2, 0))  # reshape to (32, 32, ECoG_data.shape[1])
 
+
+# %% Using the known patches, calculate the point cloud activation values
+# The point cloud activation values are the weighted sum of the patch activation values.
+# The weights are in the point_to_patch_weight dict.
+# The keys of the dictionary are the point cloud indices and the values are the patch index followed by the weight.
+# For example {0: [1,0.5, 2, 0.3]} means that the point 0 activation value is 0.5*patch1 + 0.3*patch2.
+# If the interpolation above is not used, then not all the patches will have activation values.
+# So, check for nan values and remove them from the calculation.
+point_activation = np.zeros((len(point_to_patch_weight), ECoG_data.shape[1]))
+for key in point_to_patch_weight:
+    for i in range(0, len(point_to_patch_weight[key])):
+        if not np.isnan(patch_activation[point_to_patch_weight[key][i][0]]).all():
+            point_activation[i] +=\
+                patch_activation[point_to_patch_weight[key][i][0]] * point_to_patch_weight[key][i][1]
+
+# %% check if the point activation values are all zero
+if np.all(point_activation == 0):
+    print('All point activation values are zero. Check the code')
+
+# %% plot the first 10k points of the non-zero point_activation values
+plt.figure()
+for i in range(10000):
+    plt.plot(point_activation[i])
+plt.show()
+
+# %% save the point activation values
+with open('point_activation.pkl', 'wb') as f:
+    pickle.dump(point_activation, f)

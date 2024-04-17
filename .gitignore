@@ -4,5 +4,6 @@
 # DS store for UNIX users
 .DS_Store
 
-# No need for fdt files either
+# No need for fdt and pkl files either
 *.fdt
+*.pkl
