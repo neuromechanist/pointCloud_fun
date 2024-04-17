@@ -73,3 +73,27 @@ if len(set(closest_patch.values())) != len(closest_patch):
     print('Error: Some electrodes are assigned to the same patch. Check the code')
 else:
     print('All electrodes are assigned to a unique patch')
+
+# %% Accommodate for the patches with no assigned electrode
+# Using patches with assigned electrodes and spline gird interpolation, estimate the patch activation values.
+# Then assign the estimated activation values to the patches with no assigned electrodes.
+# This is done to ensure that the LeadField matrix is smooth.
+
+from scipy.interpolate import griddata
+
+# create the patch grid for interpolation
+x = np.linspace(np.min(patch_center_coordinates[:, 0]), np.max(patch_center_coordinates[:, 0]), 32)
+y = np.linspace(np.min(patch_center_coordinates[:, 1]), np.max(patch_center_coordinates[:, 1]), 32)
+X, Y = np.meshgrid(x, y)
+
+# With the known patches from the closest_patch dict,
+# assign the patch activation values
+patch_activation = np.full((len(patch_center_coordinates), ECoG_data.shape[1]), np.nan)
+for key in closest_patch:
+    patch_activation[closest_patch[key]] = ECoG_data[ECoG.ch_names.index(key)]
+
+# interpolate the patch activation values using griddata from the known patches
+patch_activation_interpolated = np.zeros((32, 32, ECoG_data.shape[1]))
+for i in range(ECoG_data.shape[1]):
+    valid_mask = ~np.isnan(patch_activation[:, i])
+    patch_activation_interpolated[:, :, i] = griddata(patch_center_coordinates[valid_mask], patch_activation[valid_mask, i], (X, Y), method='cubic')
