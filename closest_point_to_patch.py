@@ -252,9 +252,11 @@ for i, c in enumerate(patch_centers):
             point_to_patch[closest_points_index[i, j]] = [(i, distance_of_closest_points[i, j])]
             point_to_patch_weight[closest_points_index[i, j]] = [(i, weight_of_closest_points[i, j])]
 
-# %% save the point_to_patch and point_to_patch_weight
+# %% save the point_to_patch, point_to_patch_weight, and patch center locations
 import pickle
 with open('point_to_patch.pkl', 'wb') as f:
     pickle.dump(point_to_patch, f)
 with open('point_to_patch_weight.pkl', 'wb') as f:
     pickle.dump(point_to_patch_weight, f)
+with open('patch_centers.pkl', 'wb') as f:
+    pickle.dump(patch_centers, f)

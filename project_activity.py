@@ -13,11 +13,63 @@ import mne
 
 
 # %% load data
-# load the point to patch weight
+# load the point to patch weight adn patch center coordinates
 with open('point_to_patch_weight.pkl', 'rb') as f:
     point_to_patch_weight = pickle.load(f)
+
+with open('patch_centers.pkl', 'rb') as f:
+    patch_center_coordinates = pickle.load(f)
+# Teh patch centers are coordinates in 3D space, they should be in the same space as the electrode positions,
+# which is in a 2D plane. Find the least variable dimension and remove it.
+patch_center_coordinates = np.delete(
+    patch_center_coordinates, np.std(patch_center_coordinates, axis=0).argmin(), axis=1)
+
 
 # load the patch activation values
 ECoG = mne.io.read_raw_eeglab('CS_FullMotor500Hz_475.set')
 ECoG_data = ECoG.get_data()
 electrode_positions = ECoG.info.get_montage().get_positions()['ch_pos']
+# remove the last dimension from the electrode positions, knowing that electrode positions are
+# a dictionary of 3D coordinates. Still keep the dictionary style with keys being the electrode names.
+electrode_positions = {key: np.delete(electrode_positions[key], 2) for key in electrode_positions}
+
+# %% overlay the patch and electrode positions.
+# Find the center of the electrode positions and the patches and remove the mean from both.
+electrode_center = np.mean(list(electrode_positions.values()), axis=0)
+patch_center = np.mean(patch_center_coordinates, axis=0)
+# remove the mean from both
+electrode_positions = {key: electrode_positions[key] - electrode_center for key in electrode_positions}
+patch_center_coordinates = patch_center_coordinates - patch_center
+
+# %% Scale the patch centers to match the electrode positions
+patch_center_coordinates = patch_center_coordinates * 0.01
+
+# get the range of the electrode positions and the patch centers in both dimensions
+electrode_range = np.ptp(np.array(list(electrode_positions.values())), axis=0)
+patch_range = np.ptp(patch_center_coordinates, axis=0)
+
+# scale the patch centers to match the electrode positions in both dimensions
+patch_center_coordinates = patch_center_coordinates * (electrode_range / patch_range)
+
+# scaling makes misalignment. The lower left corner (min x, max y) of the electrode positions
+# and patch should be the same
+patch_center_coordinates = patch_center_coordinates + np.min(list(electrode_positions.values()), axis=0) -\
+    np.min(patch_center_coordinates, axis=0)
+
+# Plot the electrode positions and the patch centers
+plt.figure()
+plt.scatter(patch_center_coordinates[:, 0], patch_center_coordinates[:, 1], label='Patch Centers', color='red')
+for key in electrode_positions:
+    plt.scatter(electrode_positions[key][0], electrode_positions[key][1], label='Electrodes', color='blue')
+
+# %% Create a dictionary of the closest patch to each electrode, ensure only one patch is assigned to each electrode.
+closest_patch = {}
+for key in electrode_positions:
+    distances = np.linalg.norm(patch_center_coordinates - electrode_positions[key], axis=1)
+    closest_patch[key] = np.argmin(distances)
+
+# double check if the closest patch is unique
+if len(set(closest_patch.values())) != len(closest_patch):
+    print('Error: Some electrodes are assigned to the same patch. Check the code')
+else:
+    print('All electrodes are assigned to a unique patch')
