@@ -117,11 +117,11 @@ print(f'{num_nan_patches} patches have non nan values')
 # If the interpolation above is not used, then not all the patches will have activation values.
 # So, check for nan values and remove them from the calculation.
 point_activation = np.zeros((len(point_to_patch_weight), ECoG_data.shape[1]))
-for key in point_to_patch_weight:
-    for i in range(0, len(point_to_patch_weight[key])):
-        if not np.isnan(patch_activation[point_to_patch_weight[key][i][0]]).all():
+for i, key in enumerate(point_to_patch_weight):
+    for j in range(0, len(point_to_patch_weight[key])):
+        if not np.isnan(patch_activation[point_to_patch_weight[key][j][0]]).all():
             point_activation[i] +=\
-                patch_activation[point_to_patch_weight[key][i][0]] * point_to_patch_weight[key][i][1]
+                patch_activation[point_to_patch_weight[key][j][0]] * point_to_patch_weight[key][j][1]
 
 # %% check if the point activation values are all zero
 if np.all(point_activation == 0):
@@ -134,5 +134,8 @@ for i in range(10000):
 plt.show()
 
 # %% save the point activation values
+# convert point_activation to a dict with the keys being the keys fo the point_to_patch_weight dict
+point_activation = {key: point_activation[i] for i, key in enumerate(point_to_patch_weight)}
+
 with open('point_activation.pkl', 'wb') as f:
     pickle.dump(point_activation, f)
