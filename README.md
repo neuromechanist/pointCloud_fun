@@ -22,4 +22,5 @@ graph TD
 - patch_centers.pkl: The center of each ECoG sub-patch.
 - point_activation.pkl: The ECoG activity projected to the LFM nodes.
 
-The large files are not included in the repository. Before running the scripts, you need to download (at least) the FDT files of your choosing from this **[OneDrive link](https://ucsdcloud-my.sharepoint.com/:f:/r/personal/syshirazi_ucsd_edu/Documents/to%20Share/ECoG/pointcloud_fun%20files?csf=1&web=1&e=YELLDr)**.
+Large files are not included in the repository. Before running the scripts, you need to download (at least) the FDT files of your choosing from this **[Repository Cloud Storage](https://ucsdcloud-my.sharepoint.com/:f:/r/personal/syshirazi_ucsd_edu/Documents/to%20Share/ECoG/pointcloud_fun%20files?csf=1&web=1&e=YELLDr)**.
+The LeadField Matrix (LFM) that this pipeline originally used and should be used for estimating EEG is available from **[sample high-density LFM](https://ucsdcloud-my.sharepoint.com/:f:/g/personal/syshirazi_ucsd_edu/EiVm3OZbdH9Epol6LykHvoABcZjdB0RVRc3ziXQnLpIyVA?e=UVFLQN)**.
