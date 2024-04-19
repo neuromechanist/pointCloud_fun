@@ -6,6 +6,23 @@ This work has been made possible by the high-density ECoG data collected by the 
 The data is available from **[DABI Data Repository](https://dabi.loni.usc.edu/),**.
 The paper that describes the data and the experiments is available from **[the Science Tran. Med. Journal](http://dx.doi.org/10.1126/scitranslmed.abj1441)**.
 
+## Installation
+The scripts are written in Python and require the following packages:
+- numpy
+- scipy
+- pandas
+- pymatreader
+- vtk
+- MNE-Python
+
+You can install the required packages after [installing miniconda](https://docs.anaconda.com/free/miniconda/index.html) and running the following commands:
+
+```bash
+conda create -n pointcloud_fun python=3.12
+conda activate pointcloud_fun
+pip install mne[hdf5] pandas vik pymatreader # mne installs numpy and scipy
+```
+
 ## Workflow
 Here is the general workflow of the scripts:
 
