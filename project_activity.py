@@ -9,6 +9,9 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 import mne
+from scipy.interpolate import griddata
+from scipy.io import savemat
+from multiprocessing import Pool
 
 # %% load data
 # load the point to patch weight adn patch center coordinates
@@ -77,9 +80,6 @@ else:
 # Then assign the estimated activation values to the patches with no assigned electrodes.
 # This is done to ensure that the LeadField matrix is smooth.
 
-from scipy.interpolate import griddata
-from multiprocessing import Pool
-
 # create the patch grid for interpolation
 x = np.linspace(np.min(patch_center_coordinates[:, 0]), np.max(patch_center_coordinates[:, 0]), 32)
 y = np.linspace(np.min(patch_center_coordinates[:, 1]), np.max(patch_center_coordinates[:, 1]), 32)
@@ -135,7 +135,12 @@ plt.show()
 
 # %% save the point activation values
 # convert point_activation to a dict with the keys being the keys fo the point_to_patch_weight dict
-point_activation = {key: point_activation[i] for i, key in enumerate(point_to_patch_weight)}
+point_activation_dict = {key: point_activation[i] for i, key in enumerate(point_to_patch_weight)}
 
 with open('point_activation.pkl', 'wb') as f:
-    pickle.dump(point_activation, f)
+    pickle.dump(point_activation_dict, f)
+# save point_activation data and the LFM indices as fields in a .mat file
+savemat(
+    'point_activation.mat',
+    {'point_activation': point_activation, 'LFM_indices': list(point_to_patch_weight.keys())}
+)
