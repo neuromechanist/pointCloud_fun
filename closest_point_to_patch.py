@@ -158,7 +158,7 @@ if PLOT_PATCH:
 
     # create a renderer
     renderer = vtk.vtkRenderer()
-    renderer.SetBackground(0.5, 0.5, 0.5)  # Set the background color to white
+    renderer.SetBackground(1, 1, 1)  # Set the background color to white
     renderer.AddActor(pc_actor)
     renderer.AddActor(centerpoint_actor)
 
