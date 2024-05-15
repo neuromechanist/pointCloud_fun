@@ -252,6 +252,81 @@ for i, c in enumerate(patch_centers):
             point_to_patch[closest_points_index[i, j]] = [(i, distance_of_closest_points[i, j])]
             point_to_patch_weight[closest_points_index[i, j]] = [(i, weight_of_closest_points[i, j])]
 
+# %% plot the point cloud polydata in blue (similar to above) with the points that correspond to
+# point_to_patch_weight.keys() in red
+if PLOT_PATCH:
+    glyph = vtk.vtkGlyph3D()
+    glyph.SetInputData(polydata)
+    glyph.Update()
+
+    # set the shape of the glyph
+    sphere_source = vtk.vtkSphereSource()
+    sphere_source.SetRadius(0.25)  # Set the radius of the sphere
+    glyph.SetSourceConnection(sphere_source.GetOutputPort())
+    glyph.Update()
+
+    # Increase the glyph size
+    # glyph.SetScaleFactor(2.0)  # Adjust the scale factor as desired
+
+    # Create a VTK mapper and actor
+    pc_mapper = vtk.vtkPolyDataMapper()
+    pc_mapper.SetInputConnection(glyph.GetOutputPort())
+
+    pc_actor = vtk.vtkActor()
+    pc_actor.SetMapper(pc_mapper)
+    pc_actor.GetProperty().SetColor(0, 0, 1)  # Set point color to blue
+
+    # Find the points that are in the point_to_patch_weight.keys()
+    points_in_point_to_patch_weight = vtk.vtkPoints()
+    # convert keys to numpy int
+    point_to_patch_weight_keys = np.array(list(point_to_patch_weight.keys()), dtype=int)
+    for key in point_to_patch_weight_keys:
+        points_in_point_to_patch_weight.InsertNextPoint(point_cloud[key])
+
+    points_in_point_to_patch_weight_polydata = vtk.vtkPolyData()
+    points_in_point_to_patch_weight_polydata.SetPoints(points_in_point_to_patch_weight)
+
+    # Create a VTK glyph to visualize the points
+    glyph = vtk.vtkGlyph3D()
+    glyph.SetInputData(points_in_point_to_patch_weight_polydata)
+    glyph.Update()
+
+    # set the shape of the glyph
+    sphere_source = vtk.vtkSphereSource()
+    sphere_source.SetRadius(0.50)  # Set the radius of the sphere
+    glyph.SetSourceConnection(sphere_source.GetOutputPort())
+    glyph.Update()
+
+    # Increase the glyph size
+    # glyph.SetScaleFactor(2.0)  # Adjust the scale factor as desired
+
+    # Create a VTK mapper and actor
+    centerpoint_mapper = vtk.vtkPolyDataMapper()
+    centerpoint_mapper.SetInputConnection(glyph.GetOutputPort())
+
+    centerpoint_actor = vtk.vtkActor()
+    centerpoint_actor.SetMapper(centerpoint_mapper)
+    centerpoint_actor.GetProperty().SetColor(1, 0, 0)  # Set point color to red
+
+    # create a renderer
+    renderer = vtk.vtkRenderer()
+    renderer.SetBackground(1, 1, 1)  # Set the background color to white
+    renderer.AddActor(pc_actor)
+    renderer.AddActor(centerpoint_actor)
+
+    # create a render window
+    render_window = vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+
+    # create an interactor
+    interactor = vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(render_window)
+
+    # initialize the interactor
+    interactor.Initialize()
+    render_window.Render()
+    interactor.Start()
+
 # %% save the point_to_patch, point_to_patch_weight, and patch center locations
 import pickle
 with open('point_to_patch.pkl', 'wb') as f:
