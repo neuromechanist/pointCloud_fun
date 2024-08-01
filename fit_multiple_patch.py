@@ -27,6 +27,9 @@ renderer.AddActor(surface_actor)
 # Initialize patch counter
 patch_count = 0
 
+projected_patches = []  # List to store the projected patches
+patch_actors = []  # List to store the patch actors
+
 
 def create_patch(left_corner):
     PATCH_SIZE = 32
@@ -83,6 +86,9 @@ def place_patch(obj, event):
     # Visualize the patch
     patch_actor = visualize_patch(projected_patch)
     renderer.AddActor(patch_actor)
+    patch_actors.append(patch_actor)
+
+    projected_patches.append(projected_patch)
 
     patch_count += 1
     print(f"Patch {patch_count} placed at: {picked_point}")
@@ -91,11 +97,30 @@ def place_patch(obj, event):
 
 
 def key_press(obj, event):
+    global patch_count
     key = interactor.GetKeySym()
     if key == "q" or key == "Q":
         print(f"Total patches placed: {patch_count}")
         interactor.GetRenderWindow().Finalize()
         interactor.TerminateApp()
+
+        # Save each projected patch as a separate PLY file
+        for i, patch in enumerate(projected_patches):
+            ply_writer = vtk.vtkPLYWriter()
+            ply_writer.SetFileName(f"patch_{i+1}.ply")
+            ply_writer.SetInputData(patch)
+            ply_writer.Write()
+
+    elif key == "r" or key == "R":
+        if patch_count > 0:
+            patch_count -= 1
+            renderer.RemoveActor(patch_actors[-1])  # Remove the last actor
+            patch_actors.pop()  # Remove the last patch actor from the list
+            projected_patches.pop()  # Remove the last patch from the list
+            render_window.Render()
+            print(f"Patch {patch_count+1} removed.")
+        else:
+            print("No patches to remove.")
 
 
 # Custom interactor style
