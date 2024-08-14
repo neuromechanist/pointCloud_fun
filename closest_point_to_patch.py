@@ -10,12 +10,16 @@
 import vtk
 import numpy as np
 from scipy.spatial import cKDTree
+from os.path import join
+
+patch_path = 'multi-patch'
+ply_file = 'multi_patch_5'
 
 PLOT_PATCH = False
 # load the patch
 # Create a vtkPLYReader object
 ply_reader = vtk.vtkPLYReader()
-ply_reader.SetFileName('projected_patch.ply')
+ply_reader.SetFileName(join(patch_path, ply_file + '.ply'))
 ply_reader.Update()
 
 # Get the output of the PLY reader
@@ -329,9 +333,9 @@ if PLOT_PATCH:
 
 # %% save the point_to_patch, point_to_patch_weight, and patch center locations
 import pickle
-with open('point_to_patch.pkl', 'wb') as f:
+with open(join(patch_path, ply_file + '_ptp.pkl'), 'wb') as f:  # point to patch
     pickle.dump(point_to_patch, f)
-with open('point_to_patch_weight.pkl', 'wb') as f:
+with open(join(patch_path, ply_file + '_ptpw.pkl'), 'wb') as f:  # point to patch weight
     pickle.dump(point_to_patch_weight, f)
-with open('patch_centers.pkl', 'wb') as f:
+with open(join(patch_path, ply_file + '_pc.pkl'), 'wb') as f:  # patch centers
     pickle.dump(patch_centers, f)
