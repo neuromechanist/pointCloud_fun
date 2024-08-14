@@ -12,12 +12,16 @@ import mne
 from scipy.interpolate import griddata
 from scipy.io import savemat
 from multiprocessing import Pool
+from os.path import join
+
+patch_path = 'multi-patch'
+ply_file = 'multi_patch_2'
 
 # %% load data
 # load the point to patch weight adn patch center coordinates
-with open('point_to_patch_weight.pkl', 'rb') as f:
+with open(join(patch_path, ply_file + '_ptpw.pkl'), 'rb') as f:
     point_to_patch_weight = pickle.load(f)
-with open('patch_centers.pkl', 'rb') as f:
+with open(join(patch_path, ply_file + '_pc.pkl'), 'rb') as f:
     patch_center_coordinates = pickle.load(f)
 
 # Patch centers are coordinates in 3D space, they should be in the same space as the electrode positions,
@@ -127,20 +131,20 @@ for i, key in enumerate(point_to_patch_weight):
 if np.all(point_activation == 0):
     print('All point activation values are zero. Check the code')
 
-# %% plot the first 10k points of the non-zero point_activation values
-plt.figure()
-for i in range(10000):
-    plt.plot(point_activation[i])
-plt.show()
+# # %% plot the first 10k points of the non-zero point_activation values
+# plt.figure()
+# for i in range(10000):
+#     plt.plot(point_activation[i])
+# plt.show()
 
 # %% save the point activation values
 # convert point_activation to a dict with the keys being the keys fo the point_to_patch_weight dict
 point_activation_dict = {key: point_activation[i] for i, key in enumerate(point_to_patch_weight)}
 
-with open('point_activation.pkl', 'wb') as f:
+with open(join(patch_path, ply_file + 'point_activation.pkl'), 'wb') as f:
     pickle.dump(point_activation_dict, f)
 # save point_activation data and the LFM indices as fields in a .mat file
 savemat(
-    'point_activation.mat',
+    join(patch_path, ply_file + 'point_activation.mat'),
     {'point_activation': point_activation, 'LFM_indices': list(point_to_patch_weight.keys())}
 )

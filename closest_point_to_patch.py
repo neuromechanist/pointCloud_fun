@@ -235,7 +235,7 @@ for i in range(num_patches):
 # %% for the (non-unique) closest points above, find the patches that they belong to.
 # It turns out that many of the closest points are used for multiple patches.
 # Therefore, the `unique_closest_point_index` is often empty for many patches.
-# So, we need to solve the problem in an inverse way. For each point in the point cloud, 
+# So, we need to solve the problem in an inverse way. For each point in the point cloud,
 # find the patches that they belong to. Also, include the distance of the point to the patches.
 # We can use `closest_points_index` and `distance_of_closest_points` for this purpose.
 # The algorithm is as follows:
