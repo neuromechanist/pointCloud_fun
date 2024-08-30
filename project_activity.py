@@ -15,7 +15,12 @@ from multiprocessing import Pool
 from os.path import join
 
 patch_path = 'multi-patch'
-ply_file = 'multi_patch_2'
+ply_file = 'multi_patch_5'
+# flag to shift activation values for multiple patches by 17 multiplicative factors
+# 17 is just a random number to shift the activation values.
+shift_activation = True
+# read the patch numbber from the ply_file name
+patch_number = int(ply_file.split('_')[-1])
 
 # %% load data
 # load the point to patch weight adn patch center coordinates
@@ -89,8 +94,14 @@ x = np.linspace(np.min(patch_center_coordinates[:, 0]), np.max(patch_center_coor
 y = np.linspace(np.min(patch_center_coordinates[:, 1]), np.max(patch_center_coordinates[:, 1]), 32)
 X, Y = np.meshgrid(x, y)
 
-# With the known patches from the closest_patch dict,
-# assign the patch activation values
+# %% Assign the patch activation values
+# but first if the shift_activation flag is True, shift the activation values by 17 multiplicative factors first
+if shift_activation:
+    shift = 17 * patch_number
+    # now toss the first shift values to the end
+    ECoG_data = np.roll(ECoG_data, -shift, axis=1)
+
+# %% assign the patch activation values
 patch_activation = np.full((len(patch_center_coordinates), ECoG_data.shape[1]), np.nan)
 for key in closest_patch:
     patch_activation[closest_patch[key]] = ECoG_data[ECoG.ch_names.index(key)]
@@ -141,10 +152,10 @@ if np.all(point_activation == 0):
 # convert point_activation to a dict with the keys being the keys fo the point_to_patch_weight dict
 point_activation_dict = {key: point_activation[i] for i, key in enumerate(point_to_patch_weight)}
 
-with open(join(patch_path, ply_file + 'point_activation.pkl'), 'wb') as f:
+with open(join(patch_path, ply_file + '_point_activation.pkl'), 'wb') as f:
     pickle.dump(point_activation_dict, f)
 # save point_activation data and the LFM indices as fields in a .mat file
 savemat(
-    join(patch_path, ply_file + 'point_activation.mat'),
+    join(patch_path, ply_file + '_point_activation.mat'),
     {'point_activation': point_activation, 'LFM_indices': list(point_to_patch_weight.keys())}
 )
