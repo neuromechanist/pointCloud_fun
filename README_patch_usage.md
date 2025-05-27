@@ -40,7 +40,10 @@ Set `CREATE_NEW_PATCH = False`
 When `SHOW_EEG_SENSORS = True`:
 
 - The script will load electrode locations from `jc_s1.sensors` (MATLAB file)
-- Yellow spheres will represent each EEG sensor location
+- Uses the `pnt` field (208x3 double array) for transformed coordinates
+- **First 3 sensors (fiducials)**: Light green spheres
+- **Remaining EEG sensors**: Yellow spheres  
+- **Projected patch**: Bright red surface
 - Sensors are displayed over both the cortical surface and patch
 
 ## Required Files

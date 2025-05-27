@@ -2,7 +2,6 @@
 import vtk
 import os
 import scipy.io
-import numpy as np
 
 # Configuration flags
 CREATE_NEW_PATCH = False  # Set to False to load existing patch
@@ -24,48 +23,22 @@ if SHOW_EEG_SENSORS and os.path.exists('jc_s1.sensors'):
         mat_data = scipy.io.loadmat('jc_s1.sensors')
         print("Available keys in .mat file:", list(mat_data.keys()))
         
-        # Try to find the electrode structure - look for 'eloc' first, then any other key
-        eloc_key = None
-        if 'eloc' in mat_data:
-            eloc_key = 'eloc'
-        else:
-            for key in mat_data.keys():
-                if not key.startswith('__'):  # Skip metadata keys
-                    eloc_key = key
-                    break
-                
-        if eloc_key:
-            eloc_data = mat_data[eloc_key]
-            print(f"Found electrode data under key: {eloc_key}")
-            print(f"Data shape: {eloc_data.shape}")
+        # Look for 'pnt' field which should contain 208x3 array of coordinates
+        if 'pnt' in mat_data:
+            pnts_data = mat_data['pnt']
+            print("Found electrode coordinates in 'pnt' field")
+            print(f"Data shape: {pnts_data.shape}")
             
-            # Handle different possible structures
-            if len(eloc_data.shape) > 1 and eloc_data.shape[0] == 1:
-                eloc = eloc_data[0]  # Extract from wrapper array
-            else:
-                eloc = eloc_data
-                
             eeg_sensors = []
-            for i in range(len(eloc)):
+            for i in range(pnts_data.shape[0]):
                 try:
-                    electrode = eloc[i]
-                    if hasattr(electrode, 'dtype') and electrode.dtype.names:
-                        # Extract coordinates
-                        x = float(electrode['X'][0][0]) if 'X' in electrode.dtype.names and electrode['X'].size > 0 else 0
-                        y = float(electrode['Y'][0][0]) if 'Y' in electrode.dtype.names and electrode['Y'].size > 0 else 0
-                        z = float(electrode['Z'][0][0]) if 'Z' in electrode.dtype.names and electrode['Z'].size > 0 else 0
-                        
-                        # Extract label
-                        if 'labels' in electrode.dtype.names and electrode['labels'].size > 0:
-                            label_data = electrode['labels'][0]
-                            if isinstance(label_data, np.ndarray) and label_data.size > 0:
-                                label = str(label_data[0]) if label_data.ndim > 0 else str(label_data)
-                            else:
-                                label = str(label_data)
-                        else:
-                            label = f"Ch{i+1}"
-                            
-                        eeg_sensors.append({'x': x, 'y': y, 'z': z, 'label': label})
+                    # Extract coordinates directly from the array
+                    x = float(pnts_data[i, 0])
+                    y = float(pnts_data[i, 1]) 
+                    z = float(pnts_data[i, 2])
+                    label = f"Ch{i + 1}"
+                    
+                    eeg_sensors.append({'x': x, 'y': y, 'z': z, 'label': label})
                 except Exception as e:
                     print(f"Warning: Could not process electrode {i}: {e}")
                     continue
@@ -74,7 +47,7 @@ if SHOW_EEG_SENSORS and os.path.exists('jc_s1.sensors'):
             if eeg_sensors:
                 print(f"Sample sensor: {eeg_sensors[0]}")
         else:
-            print("Could not find electrode data in .mat file")
+            print("Could not find 'pnt' field in .mat file")
             
     except Exception as e:
         print(f"Warning: Could not load EEG sensors: {e}")
@@ -211,11 +184,11 @@ def create_eeg_sensor_actors(eeg_sensors, renderer):
     """Create VTK actors for EEG sensor locations"""
     sensor_actors = []
     if eeg_sensors:
-        for sensor in eeg_sensors:
+        for i, sensor in enumerate(eeg_sensors):
             # Create a sphere for each sensor
             sphere = vtk.vtkSphereSource()
             sphere.SetCenter(sensor['x'], sensor['y'], sensor['z'])
-            sphere.SetRadius(5)  # Adjust size as needed
+            sphere.SetRadius(5)  # Large size for visibility
             sphere.SetPhiResolution(8)
             sphere.SetThetaResolution(8)
 
@@ -225,7 +198,13 @@ def create_eeg_sensor_actors(eeg_sensors, renderer):
 
             actor = vtk.vtkActor()
             actor.SetMapper(mapper)
-            actor.GetProperty().SetColor(1, 1, 0)  # Yellow color for sensors
+            
+            # Color the first 3 sensors (fiducial points) light green, others yellow
+            if i < 3:
+                actor.GetProperty().SetColor(0.5, 1, 0.5)  # Light green for fiducial points
+            else:
+                actor.GetProperty().SetColor(1, 1, 0)  # Yellow color for EEG sensors
+                
             actor.GetProperty().SetSpecular(0.3)
             actor.GetProperty().SetSpecularPower(60)
 
@@ -245,6 +224,7 @@ def create_eeg_sensor_actors(eeg_sensors, renderer):
             
     return sensor_actors
 
+
 # # Perform surface reconstruction using Poisson algorithm
 # poisson = vtk.vtkPoissonReconstruction()  # vtk.vtkPoissonReconstruction is not compiled yet
 # poisson.SetDepth(10)  # Set the depth parameter for the reconstruction
@@ -256,6 +236,7 @@ def create_eeg_sensor_actors(eeg_sensors, renderer):
 
 # %% Create final visualization
 print("Creating final visualization...")
+
 renderer = vtk.vtkRenderer()
 renderer.SetBackground(1, 1, 1)  # Set the background color to white
 
@@ -287,7 +268,7 @@ if projected_patch:
     projected_patch_mapper.SetInputData(projected_patch)
     projected_patch_actor = vtk.vtkActor()
     projected_patch_actor.SetMapper(projected_patch_mapper)
-    projected_patch_actor.GetProperty().SetColor(0, 1, 0)  # Set the color to green
+    projected_patch_actor.GetProperty().SetColor(1, 0, 0)  # Bright red color
     projected_patch_actor.GetProperty().SetOpacity(0.8)
     renderer.AddActor(projected_patch_actor)
     print("Added projected patch to visualization")
@@ -304,6 +285,8 @@ print("- 'q' or 'Q': Quit the visualization")
 print("- 'r' or 'R': Reset camera view")
 
 # Create a callback function for the key press event
+
+
 def key_press_final(obj, event):
     key = interactor.GetKeySym()
     if key == "q" or key == "Q":
@@ -312,6 +295,7 @@ def key_press_final(obj, event):
     elif key == "r" or key == "R":
         renderer.ResetCamera()
         render_window.Render()
+
 
 # Add the callback function to the key press event
 interactor.AddObserver("KeyPressEvent", key_press_final)
