@@ -6,7 +6,8 @@ This updated `fit_patch.py` script provides enhanced functionality for working w
 
 1. **Interactive or Load Mode**: Create new patches interactively or load existing ones
 2. **EEG Sensor Visualization**: Display EEG electrode locations on the cortex and patch
-3. **Enhanced Controls**: Better visualization controls and user interface
+3. **Distance Analysis**: Calculate Euclidean distances between patch center and EEG sensors
+4. **Enhanced Controls**: Better visualization controls and user interface
 
 ## Configuration
 
@@ -44,6 +45,7 @@ When `SHOW_EEG_SENSORS = True`:
 - **First 3 sensors (fiducials)**: Light green spheres
 - **Remaining EEG sensors**: Yellow spheres  
 - **Projected patch**: Bright red surface
+- **Patch center**: Magenta sphere (slightly larger)
 - Sensors are displayed over both the cortical surface and patch
 
 ## Required Files
@@ -81,8 +83,25 @@ pointCloud_fun/
 └── projected_patch.ply (created/loaded)
 ```
 
+## Distance Analysis
+
+The script automatically calculates Euclidean distances (L2 norm) between the patch center and each EEG sensor:
+
+- **Console output**: Statistical summary including min, max, mean, and standard deviation
+- **CSV file**: `patch_sensor_distances.csv` with detailed distance data for each sensor
+- **Visualization**: Patch center marked with a magenta sphere
+
+### CSV Output Format
+- `sensor_index`: Sequential sensor number (0-207)
+- `sensor_label`: Sensor identifier (Ch1, Ch2, etc.)
+- `sensor_type`: "Fiducial" or "EEG"  
+- `distance`: Euclidean distance from patch center
+- `sensor_x/y/z`: Sensor coordinates
+- `patch_center_x/y/z`: Patch center coordinates
+
 ## Output
 
 - **projected_patch.ply**: The projected patch mesh (when creating new patches)
-- **Console output**: Information about loaded sensors and processing steps
-- **3D visualization**: Interactive display of cortex, patch, and EEG sensors 
+- **patch_sensor_distances.csv**: Distance measurements for correlation analysis
+- **Console output**: Information about loaded sensors, processing steps, and distance statistics
+- **3D visualization**: Interactive display of cortex, patch, EEG sensors, and patch center 
